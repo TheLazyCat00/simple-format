@@ -80,5 +80,7 @@ The only difference is that you can also use highlight groups like `operator` fo
 Just make sure that you put the highlight group in between the tags you chose in the opts.
 With the defaults it would be `<operator>`.
 
+> [!TIP]
+> To see the highlight group under the cursor, do `:Inspect`.
 ---
 Contributions are welcome! Feel free to open issues or submit pull requests.
