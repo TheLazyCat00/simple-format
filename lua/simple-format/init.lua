@@ -1,8 +1,10 @@
+local defaults = require("simple-format.defaults")
 local M = {}
 
--- HACK: use uncommon characters as anchors
-local opening_anchor = "\226\160\128"
-local closing_anchor = "\226\160\129"
+local opening_anchor
+local closing_anchor
+local group_start
+local group_end
 
 function M.get_hl_nodes(bufnr)
 	local ft = vim.bo.filetype
@@ -78,7 +80,7 @@ end
 
 function M.replace(search, replace)
 	local bufnr = vim.api.nvim_get_current_buf()
-	local group_pattern = "<(.-)>"
+	local group_pattern = group_start .. "(.-)" .. group_end
 
 	local groups = {}
 
@@ -91,7 +93,7 @@ function M.replace(search, replace)
 
 	local labled_line, original_values = get_labeled_line(current_line, groups, bufnr)
 
-	local modified_regex = search:gsub("<", opening_anchor):gsub(">", [[%%d]] .. closing_anchor)
+	local modified_regex = search:gsub(group_start, opening_anchor):gsub(group_end, [[%%d]] .. closing_anchor)
 	local processed_line = labled_line:gsub(modified_regex, replace)
 
 	local labels_pattern = opening_anchor .. [[.-(%d-)]] .. closing_anchor
@@ -107,5 +109,14 @@ function M.replace(search, replace)
 		{ result }
 	)
 end
+
+function M.setup(opts)
+	opening_anchor = opts.opening_anchor or defaults.opening_anchor
+	closing_anchor = opts.closing_anchor or defaults.closing_anchor
+	group_start = opts.group_start or defaults.group_start
+	group_end = opts.group_end or defaults.group_end
+end
+
+M.setup({})
 
 return M
