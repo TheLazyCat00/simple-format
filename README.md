@@ -58,7 +58,7 @@ With this config, the plugin always formats when I leave insert mode.
     config = function (_, opts)
         local simple_format = require("simple-format")
         simple_format.setup(opts)
-        local replace simple_format.setup(opts)
+        local replace = simple_format.replace
         vim.api.nvim_create_autocmd("InsertLeave", {
             callback = function()
                 vim.schedule(function ()
