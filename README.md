@@ -5,7 +5,10 @@ I created this plugin because I wanted a formatter that does change the whole st
 
 ## Installation with [lazy.nvim](https://github.com/folke/lazy.nvim)
 
-simple-format does not automatically format on save. Instead, simple-format provides a replace function, which can be used for the formatting. This allows everybody to have their own formatting logic.
+simple-format does not automatically format on save. Instead, simple-format provides a `replace` function, which can be used for the formatting. This allows everybody to have their own formatting logic.
+
+> [!NOTE]
+> The `replace` function only modifies the line under the cursor.
 
 ```lua
 {
