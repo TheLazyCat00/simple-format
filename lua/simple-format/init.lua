@@ -30,7 +30,6 @@ function M.get_hl_nodes(bufnr)
 	-- iterate captures only on the current line
 	for id, node, _ in query:iter_captures(root, bufnr, current_line, current_line + 1) do
 		local capture_name = query.captures[id]
-		print(capture_name)
 		table.insert(
 			operator_nodes,
 			{capture_name, node}
