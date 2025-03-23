@@ -38,7 +38,7 @@ simple-format does not automatically format on save. Instead, simple-format prov
     opening_anchor = "\226\160\128",
     closing_anchor = "\226\160\129",
     group_start = "<",
-    group_end = "<",
+    group_end = ">",
 }
 ```
 </details>
