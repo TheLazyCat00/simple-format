@@ -18,7 +18,7 @@ simple-format does not automatically format on save. Instead, simple-format prov
 
         -- the opening and closing tags for the search syntax
         group_start = "<",
-        group_end = "<",
+        group_end = ">",
     },
     config = function ()
         local replace = require("simple-format").replace
