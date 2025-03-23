@@ -9,23 +9,23 @@ simple-format does not automatically format on save. Instead, simple-format prov
 
 ```lua
 {
-	"TheLazyCat00/simple-format",
-	opts = {
-		-- the anchors for search and replace
-		-- use uncommon characters or sequences
-		opening_anchor = "\226\160\128",
-		closing_anchor = "\226\160\129",
+    "TheLazyCat00/simple-format",
+    opts = {
+        -- the anchors for search and replace
+        -- use uncommon characters or sequences
+        opening_anchor = "\226\160\128",
+        closing_anchor = "\226\160\129",
 
-		-- the opening and closing tags for the search syntax
-		group_start = "<",
-		group_end = "<",
-	},
-	config = function ()
-		local replace = require("simple-format").replace
+        -- the opening and closing tags for the search syntax
+        group_start = "<",
+        group_end = "<",
+    },
+    config = function ()
+        local replace = require("simple-format").replace
 
-		-- add your own formatting logic
-		-- remember to use vim.schedule to prevent blocking the user
-	end
+        -- add your own formatting logic
+        -- remember to use vim.schedule to prevent blocking the user
+    end
 }
 ```
 
@@ -34,40 +34,40 @@ simple-format does not automatically format on save. Instead, simple-format prov
 
 ```lua
 {
-	-- HACK: use uncommon characters as anchors
-	opening_anchor = "\226\160\128",
-	closing_anchor = "\226\160\129",
-	group_start = "<",
-	group_end = "<",
+    -- HACK: use uncommon characters as anchors
+    opening_anchor = "\226\160\128",
+    closing_anchor = "\226\160\129",
+    group_start = "<",
+    group_end = "<",
 }
 ```
 </details>
 
 ### My personal config
 
-With this config the plugin always formats when I leave insert mode.
+With this config, the plugin always formats when I leave insert mode.
 
 ```lua
 {
-	"TheLazyCat00/simple-format",
-	event = "BufReadPost",
-	opts = {},
-	config = function ()
-		vim.api.nvim_create_autocmd("InsertLeave", {
-			callback = function()
-				vim.schedule(function ()
-					local replace = require("simple-format").replace
-					replace("(%S)(<operator>)", "%1 %2")
-					replace("(<operator>)(%S)", "%1 %2")
-					replace("(%S)(<constructor>)", "%1 %2")
-					replace("(<constructor>)(%S)", "%1 %2")
-					replace("(<constructor>) (<punctuation.bracket>)", "%1%2")
-					replace("(<punctuation.bracket>) (<constructor>)", "%1%2")
-					replace("(<constructor>) (<punctuation.delimiter>)", "%1%2")
-				end)
-			end,
-		})
-	end
+    "TheLazyCat00/simple-format",
+    event = "BufReadPost",
+    opts = {},
+    config = function ()
+        vim.api.nvim_create_autocmd("InsertLeave", {
+            callback = function()
+                vim.schedule(function ()
+                    local replace = require("simple-format").replace
+                    replace("(%S)(<operator>)", "%1 %2")
+                    replace("(<operator>)(%S)", "%1 %2")
+                    replace("(%S)(<constructor>)", "%1 %2")
+                    replace("(<constructor>)(%S)", "%1 %2")
+                    replace("(<constructor>) (<punctuation.bracket>)", "%1%2")
+                    replace("(<punctuation.bracket>) (<constructor>)", "%1%2")
+                    replace("(<constructor>) (<punctuation.delimiter>)", "%1%2")
+                end)
+            end,
+        })
+    end
 }
 ```
 
