@@ -6,7 +6,7 @@ local closing_anchor
 local group_start
 local group_end
 
-function M.get_hl_nodes(bufnr)
+function M.get_hl_nodes(bufnr, linenr, specific)
 	local ft = vim.bo.filetype
 
 	local status, parser = pcall(vim.treesitter.get_parser, bufnr, ft)
@@ -24,17 +24,19 @@ function M.get_hl_nodes(bufnr)
 
 	local nodes = {}
 	local place_nodes = {}
-	-- get current line (0-indexed)
-	local current_line = vim.fn.line('.') - 1
 
 	-- iterate captures only on the current line
-	for id, node, _ in query:iter_captures(root, bufnr, current_line, current_line + 1) do
+	for id, node, _ in query:iter_captures(root, bufnr, linenr, linenr + 1) do
 		local start_row, start_col, end_row, end_col = node:range()
 		local capture_name = query.captures[id]
-		if place_nodes[start_col] then
-			place_nodes[start_col].name = capture_name
+		local key = start_col
+		if place_nodes[key] then
+			if specific then
+				place_nodes[key].name = capture_name
+				place_nodes[key].node = node
+			end
 		else
-			place_nodes[start_col] = {
+			place_nodes[key] = {
 				name = capture_name,
 				node = node
 			}
@@ -51,12 +53,20 @@ function M.get_hl_nodes(bufnr)
 		)
 	end
 
+	table.sort(nodes, function(a, b)
+		local _, a_node = a[1], a[2]
+		local a_row, a_col = a_node:range()
+		local _, b_node = b[1], b[2]
+		local b_row, b_col = b_node:range()
+		return a_col < b_col
+	end)
+
 	return nodes
 end
 
 
-local function get_labeled_line(line, groups, bufnr)
-	local nodes = M.get_hl_nodes(bufnr)
+local function get_labeled_line(line, linenr, groups, bufnr, specific)
+	local nodes = M.get_hl_nodes(bufnr, linenr, specific)
 	local original_values = {}
 	local offset = 0
 	local index = 0
@@ -93,7 +103,8 @@ local function get_labeled_line(line, groups, bufnr)
 	return line, original_values
 end
 
-function M.replace(search, replace)
+function M.replace(search, replace, specific)
+	specific = specific or false
 	local bufnr = vim.api.nvim_get_current_buf()
 	local group_pattern = group_start .. "(.-)" .. group_end
 
@@ -104,9 +115,9 @@ function M.replace(search, replace)
 	end
 
 	local current_line = vim.fn.getline(".")
-	local current_linenr = vim.fn.line('.')
+	local current_linenr = vim.fn.line('.') - 1
 
-	local labled_line, original_values = get_labeled_line(current_line, groups, bufnr)
+	local labled_line, original_values = get_labeled_line(current_line, current_linenr, groups, bufnr, specific)
 
 	local modified_regex = search:gsub(group_start, opening_anchor):gsub(group_end, [[%%d]] .. closing_anchor)
 	local processed_line = labled_line:gsub(modified_regex, replace)
