@@ -24,6 +24,7 @@ function M.get_hl_nodes(bufnr, linenr, specific)
 
 	local nodes = {}
 	local place_nodes = {}
+	linenr = linenr - 1
 
 	-- iterate captures only on the current line
 	for id, node, _ in query:iter_captures(root, bufnr, linenr, linenr + 1) do
@@ -115,7 +116,7 @@ function M.replace(search, replace, specific)
 	end
 
 	local current_line = vim.fn.getline(".")
-	local current_linenr = vim.fn.line('.') - 1
+	local current_linenr = vim.fn.line('.')
 
 	local labled_line, original_values = get_labeled_line(current_line, current_linenr, groups, bufnr, specific)
 
