@@ -90,7 +90,6 @@ local function get_labeled_line(line, groups, bufnr)
 		::continue::
 	end
 
-	print(line)
 	return line, original_values
 end
 
