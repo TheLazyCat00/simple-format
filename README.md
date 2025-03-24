@@ -66,9 +66,10 @@ With this config, the plugin always formats when I leave insert mode.
                     replace("(<operator>)(%S)", "%1 %2")
                     replace("(%S)(<constructor>)", "%1 %2")
                     replace("(<constructor>)(%S)", "%1 %2")
-                    replace("(<punctuation.delimiter>)(%S)", "%1 %2")
+                    replace("(<punctuation.bracket>) (<constructor>)", "%1%2")
+                    replace("(<constructor>) (<punctuation.bracket>)", "%1%2")
+                    replace("(<constructor>) (<constructor>)", "%1%2")
                     replace("(<punctuation.bracket>) (<punctuation.bracket>)", "%1%2")
-                    replace("(<constructor>) (<punctuation.delimiter>)", "%1%2")
                 end)
             end,
         })
