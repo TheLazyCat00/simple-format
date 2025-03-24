@@ -22,20 +22,36 @@ function M.get_hl_nodes(bufnr)
 		return {}
 	end
 
-	local operator_nodes = {}
+	local nodes = {}
+	local place_nodes = {}
 	-- get current line (0-indexed)
 	local current_line = vim.fn.line('.') - 1
 
 	-- iterate captures only on the current line
 	for id, node, _ in query:iter_captures(root, bufnr, current_line, current_line + 1) do
+		local start_row, start_col, end_row, end_col = node:range()
 		local capture_name = query.captures[id]
+		if place_nodes[start_col] then
+			place_nodes[start_col].name = capture_name
+		else
+			place_nodes[start_col] = {
+				name = capture_name,
+				node = node
+			}
+		end
+	end
+
+	for _, data in pairs(place_nodes) do
+		local name = data.name
+		local node = data.node
+
 		table.insert(
-			operator_nodes,
-			{capture_name, node}
+			nodes,
+			{ name, node }
 		)
 	end
 
-	return operator_nodes
+	return nodes
 end
 
 
@@ -74,6 +90,7 @@ local function get_labeled_line(line, groups, bufnr)
 		::continue::
 	end
 
+	print(line)
 	return line, original_values
 end
 
