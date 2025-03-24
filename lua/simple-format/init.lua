@@ -77,7 +77,7 @@ local function get_labeled_line(line, groups, bufnr)
 	return line, original_values
 end
 
-local function search_replace(search, replace, line)
+function M.replace(search, replace)
 	local bufnr = vim.api.nvim_get_current_buf()
 	local group_pattern = group_start .. "(.-)" .. group_end
 
@@ -87,7 +87,10 @@ local function search_replace(search, replace, line)
 		groups[match] = true
 	end
 
-	local labled_line, original_values = get_labeled_line(line, groups, bufnr)
+	local current_line = vim.fn.getline(".")
+	local current_linenr = vim.fn.line('.')
+
+	local labled_line, original_values = get_labeled_line(current_line, groups, bufnr)
 
 	local modified_regex = search:gsub(group_start, opening_anchor):gsub(group_end, [[%%d]] .. closing_anchor)
 	local processed_line = labled_line:gsub(modified_regex, replace)
@@ -97,22 +100,7 @@ local function search_replace(search, replace, line)
 		return original_values[tonumber(n)] or ""
 	end)
 
-	return result
-end
-
-function M.replaces(patterns)
-	local bufnr = vim.api.nvim_get_current_buf()
-	local current_line = vim.fn.getline(".")
-	local line = current_line
-	local current_linenr = vim.fn.line('.')
-
-	for _, data in ipairs(patterns) do
-		local search = data[1]
-		local replace = data[2]
-		line = search_replace(search, replace, line)
-	end
-
-	if line == current_line then
+	if result == current_line then
 		return
 	end
 
@@ -121,7 +109,7 @@ function M.replaces(patterns)
 		current_linenr - 1,
 		current_linenr,
 		false,
-		{ line }
+		{ result }
 	)
 end
 
