@@ -68,9 +68,7 @@ end
 
 local function get_labeled_line(line, linenr, groups, bufnr, specific)
 	local nodes = M.get_hl_nodes(bufnr, linenr, specific)
-	local original_values = {}
 	local offset = 0
-	local index = 0
 
 	for _, data in ipairs(nodes) do
 		local name = data[1]
@@ -79,11 +77,9 @@ local function get_labeled_line(line, linenr, groups, bufnr, specific)
 		if not groups[name] then
 			goto continue
 		end
-		index = index + 1
 
 		local start_row, start_col, end_row, end_col = node:range()
 		local node_text = vim.treesitter.get_node_text(node, 0)
-		original_values[index] = node_text
 
 		local start = start_col + offset
 		local ending = end_col + offset
@@ -91,7 +87,7 @@ local function get_labeled_line(line, linenr, groups, bufnr, specific)
 		local before = line:sub(1, start)
 		local after = line:sub(ending + 1)
 
-		local label = name .. index
+		local label = name .. "=" .. node_text
 		local replacement = opening_anchor .. label .. closing_anchor
 		line = before .. replacement .. after
 
@@ -101,13 +97,13 @@ local function get_labeled_line(line, linenr, groups, bufnr, specific)
 		::continue::
 	end
 
-	return line, original_values
+	return line
 end
 
 function M.replace(search, replace, specific)
 	specific = specific or false
 	local bufnr = vim.api.nvim_get_current_buf()
-	local group_pattern = group_start .. "(.-)" .. group_end
+	local group_pattern = group_start .. "(.-)=.-" .. group_end
 
 	local groups = {}
 
@@ -118,14 +114,14 @@ function M.replace(search, replace, specific)
 	local current_line = vim.fn.getline(".")
 	local current_linenr = vim.fn.line('.')
 
-	local labled_line, original_values = get_labeled_line(current_line, current_linenr, groups, bufnr, specific)
+	local labled_line = get_labeled_line(current_line, current_linenr, groups, bufnr, specific)
 
-	local modified_regex = search:gsub(group_start, opening_anchor):gsub(group_end, [[%%d]] .. closing_anchor)
+	local modified_regex = search:gsub(group_start, opening_anchor):gsub(group_end, closing_anchor)
 	local processed_line = labled_line:gsub(modified_regex, replace)
 
-	local labels_pattern = opening_anchor .. [[.-(%d-)]] .. closing_anchor
-	local result = processed_line:gsub(labels_pattern, function(n)
-		return original_values[tonumber(n)] or ""
+	local labels_pattern = opening_anchor .. [[.-=(.-)]] .. closing_anchor
+	local result = processed_line:gsub(labels_pattern, function(text)
+		return text or ""
 	end)
 
 	if result == current_line then
