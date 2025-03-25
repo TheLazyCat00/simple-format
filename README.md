@@ -47,7 +47,7 @@ simple-format does not automatically format on save. Instead, simple-format prov
 ```
 </details>
 
-** My personal config **
+**My personal config**
 
 With this config, the plugin always formats when I leave insert mode.
 
