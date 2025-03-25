@@ -23,8 +23,9 @@ simple-format does not automatically format on save. Instead, simple-format prov
         group_start = "<",
         group_end = ">",
     },
-    config = function ()
+    config = function (_, opts)
         local replace = require("simple-format").replace
+        replace.setup(opts)
 
         -- add your own formatting logic
         -- remember to use vim.schedule to prevent blocking the user
@@ -46,7 +47,7 @@ simple-format does not automatically format on save. Instead, simple-format prov
 ```
 </details>
 
-### My personal config
+** My personal config **
 
 With this config, the plugin always formats when I leave insert mode.
 
@@ -54,6 +55,7 @@ With this config, the plugin always formats when I leave insert mode.
 {
     "TheLazyCat00/simple-format",
     event = "BufReadPost",
+    -- enabled = false,
     opts = {},
     config = function (_, opts)
         local simple_format = require("simple-format")
@@ -62,14 +64,12 @@ With this config, the plugin always formats when I leave insert mode.
         vim.api.nvim_create_autocmd("InsertLeave", {
             callback = function()
                 vim.schedule(function ()
-                    replace("(%S)(<operator>)", "%1 %2")
-                    replace("(<operator>)(%S)", "%1 %2")
-                    replace("(%S)(<constructor>)", "%1 %2")
-                    replace("(<constructor>)(%S)", "%1 %2")
-                    replace("(<punctuation.bracket>) (<constructor>)", "%1%2")
-                    replace("(<constructor>) (<punctuation.bracket>)", "%1%2")
-                    replace("(<constructor>) (<constructor>)", "%1%2")
-                    replace("(<punctuation.bracket>) (<punctuation.bracket>)", "%1%2")
+                    replace("(%S)(<operator=.->)", "%1 %2")
+                    replace("(<operator=.->)(%S)", "%1 %2")
+                    replace("(<punctuation.delimiter=,>)(%S)", "%1 %2")
+                    replace("(<punctuation.bracket={>)(%S)", "%1 %2")
+                    replace("(%S)(<punctuation.bracket=}>)", "%1 %2")
+                    replace("(<punctuation.bracket=.->) (<punctuation.bracket=.->)", "%1%2")
                 end)
             end,
         })
@@ -80,10 +80,41 @@ With this config, the plugin always formats when I leave insert mode.
 ## Syntax
 The syntax for the search and replace arguments have the same syntax as `str:gsub` in lua.
 The only difference is that you can also use highlight groups like `operator` for pattern matching.
+The syntax goes: `group_start + highlight_group + "=" + desired_value + group_end`.
 Just make sure that you put the highlight group in between the tags you chose in the opts.
-With the defaults it would be `<operator>`.
+You also have to specify the value of the highlight group.
+With the defaults you could for example do `<operator=.->`.
+This would match any operator. Here we use regex functionality `.-` so that we can match for any string.
+There are great online resources for learning regex, it's not as hard as it looks.
+We could also do `<operator==>`. This would match any operator that has `=` as its value.
 
 > [!TIP]
 > To see the highlight group under the cursor, do `:Inspect`.
+
+## Examples
+
+These are some useful examples you can use for your own config (assuming you are using the defaults).
+
+- Formatting lists by putting a space after `,`:
+    ```lua
+    replace("(<punctuation.delimiter=,>)(%S)", "%1 %2")
+    -- Explanation: We wanna search for a punctuation delimiter with
+    -- the value ",".
+    -- We need to capture this, so that we can use the value in the replace process:
+    -- We do this putting it in parantheses.
+    -- Then we search for a character that is not a white space:
+    -- %S means anything thats NOT a white space character.
+    -- We also capture this value for later use.
+
+    -- Then we replace the string with "%1 %2".
+    -- This means that we take capture group 1, put a space and add group 2.
+    -- NOTE: Groups get labled automatically in regex according to the order.
+    ```
+- Removing spaces between arguments and parantheses:
+    ```lua
+    replace("<punctuation.bracket=(> ", "(")
+    replace(" <punctuation.bracket=)>", ")")
+    ```
+
 ---
 Contributions are welcome! Feel free to open issues or submit pull requests.
