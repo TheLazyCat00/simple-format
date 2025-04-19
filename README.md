@@ -3,6 +3,8 @@
 simple-format allows you to search and replace with highlight groups + regex, making it easy to create custom formatting rules.
 I created this plugin because I wanted a formatter that does change the whole styling of my code but only removes unnecessary white space.
 
+https://github.com/user-attachments/assets/600ed7a0-98ae-48b4-925f-b7dc9ac01fb9
+
 ## Installation with [lazy.nvim](https://github.com/folke/lazy.nvim)
 
 simple-format does not automatically format on save. Instead, simple-format provides a `replace` function, which can be used for the formatting. This allows everybody to have their own formatting logic.
