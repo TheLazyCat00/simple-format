@@ -65,7 +65,6 @@ function M.get_hl_nodes(bufnr, linenr, specific)
 	return nodes
 end
 
-
 local function get_labeled_line(line, linenr, groups, bufnr, specific)
 	local nodes = M.get_hl_nodes(bufnr, linenr, specific)
 	local offset = 0
