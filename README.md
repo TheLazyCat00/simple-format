@@ -97,25 +97,25 @@ We could also do `<operator==>`. This would match any operator that has `=` as i
 These are some useful examples you can use for your own config (assuming you are using the defaults).
 
 - Formatting lists by putting a space after `,`:
-    ```lua
-    replace("(<punctuation.delimiter=,>)(%S)", "%1 %2")
-    -- Explanation: We wanna search for a punctuation delimiter with
-    -- the value ",".
-    -- We need to capture this, so that we can use the value in the replace process:
-    -- We do this putting it in parentheses.
-    -- Then we search for a character that is not a white space:
-    -- %S means anything thats NOT a white space character.
-    -- We also capture this value for later use.
+  ```lua
+  replace("(<punctuation.delimiter=,>)(%S)", "%1 %2")
+  -- Explanation: We wanna search for a punctuation delimiter with
+  -- the value ",".
+  -- We need to capture this, so that we can use the value in the replace process:
+  -- We do this putting it in parentheses.
+  -- Then we search for a character that is not a white space:
+  -- %S means anything thats NOT a white space character.
+  -- We also capture this value for later use.
 
-    -- Then we replace the string with "%1 %2".
-    -- This means that we take capture group 1, put a space and add group 2.
-    -- NOTE: Groups get labeled automatically in regex according to the order.
+  -- Then we replace the string with "%1 %2".
+  -- This means that we take capture group 1, put a space and add group 2.
+  -- NOTE: Groups get labeled automatically in regex according to the order.
     ```
 - Removing spaces between arguments and parentheses:
-    ```lua
-	-- We need to escape parentheses
-    replace("<punctuation.bracket=%(> ", "(")
-    replace(" <punctuation.bracket=%)>", ")")
+  ```lua
+  -- We need to escape parentheses
+  replace("<punctuation.bracket=%(> ", "(")
+  replace(" <punctuation.bracket=%)>", ")")
     ```
 
 ---
