@@ -9,7 +9,8 @@ local group_end
 function M.get_hl_nodes(bufnr, linenr, specific)
 	local ft = vim.bo.filetype
 
-	local status, parser = pcall(vim.treesitter.get_parser, bufnr, ft)
+	local parser_name = vim.treesitter.language.get_lang(ft)
+	local status, parser = pcall(vim.treesitter.get_parser, bufnr, parser_name)
 	if not status then
 		return {}
 	end
@@ -17,7 +18,7 @@ function M.get_hl_nodes(bufnr, linenr, specific)
 	local tree = parser:parse()[1]
 	local root = tree:root()
 
-	local status, query = pcall(vim.treesitter.query.get, ft, "highlights")
+	local status, query = pcall(vim.treesitter.query.get, parser_name, "highlights")
 	if not status then
 		return {}
 	end
