@@ -1,7 +1,15 @@
-return {
+---@class Config
+---@field injectionOpeningAnchor string
+---@field injectionClosingAnchor string
+---@field groupStart string
+---@field groupEnd string
+
+---@type Config
+local defaults = {
 	-- HACK: use uncommon characters as anchors
-	opening_anchor = "\226\160\128",
-	closing_anchor = "\226\160\129",
-	group_start = "<",
-	group_end = ">",
+	injectionOpeningAnchor = "\226\160\128",
+	injectionClosingAnchor = "\226\160\129",
+	groupStart = "<",
+	groupEnd = ">",
 }
+return defaults;

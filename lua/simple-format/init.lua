@@ -1,16 +1,25 @@
 local defaults = require("simple-format.defaults")
+
+---@type Config
+local config
 local M = {}
 
-local opening_anchor
-local closing_anchor
-local group_start
-local group_end
+---@param opts Config
+function M.setup(opts)
+	config = vim.tbl_deep_extend("force", defaults, opts)
+end
 
-function M.get_hl_nodes(bufnr, linenr, specific)
+---@class Node
+---@field node TSNode
+---@field name string
+	
+---@return Node[]
+local function getCurrentLineNodes()
 	local ft = vim.bo.filetype
+	local currentLine = vim.fn.line(".") - 1 -- top most line = 0
 
 	local parser_name = vim.treesitter.language.get_lang(ft)
-	local status, parser = pcall(vim.treesitter.get_parser, bufnr, parser_name)
+	local status, parser = pcall(vim.treesitter.get_parser, 0, parser_name)
 	if not status then
 		return {}
 	end
@@ -23,125 +32,156 @@ function M.get_hl_nodes(bufnr, linenr, specific)
 		return {}
 	end
 
+	---@type Node[]
 	local nodes = {}
-	local place_nodes = {}
-	linenr = linenr - 1
 
-	-- iterate captures only on the current line
-	for id, node, _ in query:iter_captures(root, bufnr, linenr, linenr + 1) do
-		local start_row, start_col, end_row, end_col = node:range()
-		local capture_name = query.captures[id]
-		local key = start_col
-		if place_nodes[key] then
-			if specific then
-				place_nodes[key].name = capture_name
-				place_nodes[key].node = node
-			end
-		else
-			place_nodes[key] = {
-				name = capture_name,
-				node = node
-			}
-		end
+	for id, node, _ in query:iter_captures(root, 0, currentLine, currentLine + 1) do
+		local captureName = query.captures[id]
+
+		---@type Node
+		local item = {
+			name = captureName,
+			node = node
+		}
+
+		table.insert(nodes, item)
 	end
-
-	for _, data in pairs(place_nodes) do
-		local name = data.name
-		local node = data.node
-
-		table.insert(
-			nodes,
-			{ name, node }
-		)
-	end
-
-	table.sort(nodes, function(a, b)
-		local _, a_node = a[1], a[2]
-		local a_row, a_col = a_node:range()
-		local _, b_node = b[1], b[2]
-		local b_row, b_col = b_node:range()
-		return a_col < b_col
-	end)
 
 	return nodes
 end
 
-local function get_labeled_line(line, linenr, groups, bufnr, specific)
-	local nodes = M.get_hl_nodes(bufnr, linenr, specific)
-	local offset = 0
-
-	for _, data in ipairs(nodes) do
-		local name = data[1]
-		local node = data[2]
-
-		if not groups[name] then
-			goto continue
+---@generic T
+---@param list T[]
+---@param callback fun(item: T): any
+---@return T[][]
+local function groupByField(list, callback)
+	local groups = {}
+	local order = {}
+	
+	for _, item in ipairs(list) do
+		local key = callback(item)
+		if not groups[key] then
+		groups[key] = {}
+		table.insert(order, key)
 		end
-
-		local start_row, start_col, end_row, end_col = node:range()
-		local node_text = vim.treesitter.get_node_text(node, 0)
-
-		local start = start_col + offset
-		local ending = end_col + offset
-
-		local before = line:sub(1, start)
-		local after = line:sub(ending + 1)
-
-		local label = name .. "=" .. node_text
-		local replacement = opening_anchor .. label .. closing_anchor
-		line = before .. replacement .. after
-
-		local length_replacement = #replacement - #node_text
-		offset = offset + length_replacement
-
-		::continue::
+		table.insert(groups[key], item)
 	end
-
-	return line
+	
+	local result = {}
+	for _, key in ipairs(order) do
+		table.insert(result, groups[key])
+	end
+	
+	return result
 end
 
-function M.replace(search, replace, specific)
-	specific = specific or false
-	local bufnr = vim.api.nvim_get_current_buf()
-	local group_pattern = group_start .. "(.-)=.-" .. group_end
+---@generic T
+---@param tbl T[]
+---@return T[]
+local function reverse(tbl)
+	local reversed = {}
+	for i = #tbl, 1, -1 do
+		table.insert(reversed, tbl[i])
+	end
+	return reversed
+end
 
-	local groups = {}
+---@return string
+---@param nodes Node[]
+---@param reveal boolean
+local function getFillerStringFromNodes(nodes, reveal)
+	local nodeText = vim.treesitter.get_node_text(nodes[1].node, 0)
+	local fillerString = ""
+	fillerString = fillerString .. "|"
 
-	for match in search:gmatch(group_pattern) do
-		groups[match] = true
+	for _, node in ipairs(nodes) do
+		fillerString = fillerString .. node.name .. "|"
 	end
 
-	local current_line = vim.fn.getline(".")
-	local current_linenr = vim.fn.line('.')
+	fillerString = fillerString .. "=" .. nodeText
+	local startAnchor = reveal and config.groupStart or config.injectionOpeningAnchor
+	local endAnchor = reveal and config.groupEnd or config.injectionClosingAnchor
+	fillerString = startAnchor .. fillerString .. endAnchor
 
-	local labled_line = get_labeled_line(current_line, current_linenr, groups, bufnr, specific)
+	return fillerString
+end
 
-	local modified_regex = search:gsub(group_start, opening_anchor):gsub(group_end, closing_anchor)
-	local processed_line = labled_line:gsub(modified_regex, replace)
+---@return string
+---@param originalLine string
+---@param nodes Node[]
+---@param reveal boolean
+local function injectNodesIntoLine(originalLine, nodes, reveal)
+	local fillerString = getFillerStringFromNodes(nodes, reveal)
+	local startRow, startCol, endRow, endCol = nodes[1].node:range()
 
-	local labels_pattern = opening_anchor .. [[.-=(.-)]] .. closing_anchor
-	local result = processed_line:gsub(labels_pattern, function(text)
+	local stringBefore = originalLine:sub(1, startCol)
+	local stringAfter = originalLine:sub(endCol + 1)
+
+	local injectedLine = stringBefore .. fillerString .. stringAfter
+	return injectedLine
+end
+
+---@return string
+---@param reveal boolean
+local function getInjectedLine(reveal)
+	local currentLineContent = vim.api.nvim_get_current_line()
+	local currentLineNodes = reverse(getCurrentLineNodes())
+	local injectedLine = currentLineContent
+
+	local groupedNodes = groupByField(currentLineNodes, function (node)
+		local startRow, startCol, endRow, endCol = node.node:range()
+		return startCol
+	end)
+
+	for _, nodes in ipairs(groupedNodes) do
+		injectedLine = injectNodesIntoLine(injectedLine, nodes, reveal)
+	end
+
+	return injectedLine
+end
+
+---@return string
+---@param regex string
+---@param replaceGroups string
+local function replace(regex, replaceGroups)
+	local injectedLine = getInjectedLine(false)
+	regex = regex:gsub(config.groupStart, config.injectionOpeningAnchor)
+	regex = regex:gsub(config.groupEnd, config.injectionClosingAnchor)
+
+	local lineTemplate = injectedLine:gsub(regex, replaceGroups)
+	local nodeTextPattern = config.injectionOpeningAnchor .. [[.-=(.-)]] .. config.injectionClosingAnchor
+
+	local result = lineTemplate:gsub(nodeTextPattern, function(text)
 		return text or ""
 	end)
 
-	if result == current_line then
+	return result
+end
+
+---@param regex string
+---@param replaceGroups string
+function M.replace(regex, replaceGroups)
+	local modfiedLine = replace(regex, replaceGroups)
+
+	if modfiedLine == vim.fn.getline(".") then
 		return
 	end
 
-	vim.api.nvim_buf_set_lines(
-		bufnr,
-		current_linenr - 1,
-		current_linenr,
-		false,
-		{ result }
-	)
+	local currentLineNumber = vim.fn.line('.')
+	pcall(function()
+		vim.api.nvim_buf_set_lines(
+			0,
+			currentLineNumber - 1,
+			currentLineNumber,
+			false,
+			{ modfiedLine }
+		)
+	end)
 end
 
-function M.setup(opts)
-	opening_anchor = opts.opening_anchor or defaults.opening_anchor
-	closing_anchor = opts.closing_anchor or defaults.closing_anchor
-	group_start = opts.group_start or defaults.group_start
-	group_end = opts.group_end or defaults.group_end
+function M.reveal()
+	local injectedLine = getInjectedLine(true)
+	vim.notify(injectedLine, vim.log.levels.INFO)
 end
 
 return M
