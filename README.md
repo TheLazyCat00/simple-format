@@ -115,7 +115,7 @@ These are some useful examples you can use for your own config (assuming you are
   replace("(<|punctuation.delimiter|=,>) *(<.->)", "%1 %2")
   -- Explanation: We wanna search for a punctuation delimiter with
   -- the value ",".
-  -- Not that we added .-| and |.- on both sides
+  -- Note that we added .-| and |.- on both sides
   -- so that this works on words with multiple highlight groups
   -- (remember, ".-" matches any string and also empty strings,
   -- so this would work even with only punctuation.delimiter)
