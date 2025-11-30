@@ -64,20 +64,27 @@ With this config, the plugin always formats when I leave insert mode.
         local simpleFormat = require("simple-format")
         simpleFormat.setup(opts)
         local replace = simpleFormat.replace
+
+        local function format()
+            vim.schedule(function ()
+                replace("(<.->) *(<|operator|=.->)","%1 %2")
+                replace("(<|operator|=.->) *(<.->)","%1 %2")
+
+                replace("(<.->) *(<|punctuation.delimiter|=,>)", "%1%2")
+                replace("(<|punctuation.delimiter|=,>) *(<.->)", "%1 %2")
+
+                replace("(<.-|punctuation.bracket|.-={>) *(<.-|punctuation.bracket|.-=}>)", "%1%2")
+                replace("(<.-|punctuation.bracket|.-={>) *(<.*>) *(<.-|punctuation.bracket|.-=}>)","%1 %2 %3")
+
+                replace("(<|punctuation.bracket|=%(>) *(.-) *(<|punctuation.bracket|=%)>)","%1%2%3")
+            end)
+        end
+
         vim.api.nvim_create_autocmd("InsertLeave", {
-            callback = function()
-                vim.schedule(function ()
-                    -- simpleFormat.reveal() commented out right now, but this shows the line "structure" with vim.notify
-                    replace("(%S) -(<.-|operator|.-=.->)", "%1 %2")
-                    replace("(<.-|operator|.-=.->) -(%S)", "%1 %2")
-                    replace("(<.-|punctuation.delimiter|.-=,>) -(%S)", "%1 %2")
-                    replace("(<.-|punctuation.bracket|.-={>) -(<.-|punctuation.bracket|.-=}>)", "%1%2")
-                    replace("(<.-|punctuation.bracket|.-={>) -(%S.-%S) -(<.-|punctuation.bracket|.-=}>)", "%1 %2 %3")
-                    replace("(<.-|punctuation.bracket|.-=%(>) -(%S.-%S) -(<.-|punctuation.bracket|.-=%)>)", "%1%2%3")
-                    replace("(<.-|punctuation.bracket|.-=%(>) -(<.-|punctuation.bracket|.-=%)>)", "%1%2")
-                end)
-            end,
+            callback = format,
         })
+
+        vim.api.nvim_create_user_command("Reveal", simpleFormat.reveal, {})
     end
 }
 ```
@@ -105,7 +112,7 @@ These are some useful examples you can use for your own config (assuming you are
 
 - Formatting lists by putting a space after `,`:
   ```lua
-  replace("(<.-|punctuation.delimiter|.-=,>) -(%S)", "%1 %2")
+  replace("(<|punctuation.delimiter|=,>) *(<.->)", "%1 %2")
   -- Explanation: We wanna search for a punctuation delimiter with
   -- the value ",".
   -- Not that we added .-| and |.- on both sides
@@ -126,8 +133,7 @@ These are some useful examples you can use for your own config (assuming you are
 - Removing spaces between arguments and parentheses:
   ```lua
   -- We need to escape parentheses
-  replace("(<.-|punctuation.bracket|.-=%(>) -(%S.-%S) -(<.-|punctuation.bracket|.-=%)>)", "%1%2%3")
-  replace("(<.-|punctuation.bracket|.-=%(>) -(<.-|punctuation.bracket|.-=%)>)", "%1%2")
+  replace("(<|punctuation.bracket|=%(>) *(.-) *(<|punctuation.bracket|=%)>)","%1%2%3")
   ```
 
 ---
