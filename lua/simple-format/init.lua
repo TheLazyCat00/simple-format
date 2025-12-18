@@ -36,15 +36,13 @@ local function getCurrentLineNodes()
 	local nodes = {}
 
 	for id, node, _ in query:iter_captures(root, 0, currentLine, currentLine + 1) do
-		local captureName = query.captures[id]
-
-		---@type Node
-		local item = {
-			name = captureName,
-			node = node
-		}
-
-		table.insert(nodes, item)
+		if node:child_count() == 0 then
+			local captureName = query.captures[id]
+			table.insert(nodes, {
+				name = captureName,
+				node = node
+			})
+		end
 	end
 
 	return nodes
